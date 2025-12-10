@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AuthSingup, ResendOTP, verifyOtp } from "@/services/auth";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
-const SignupPage = () => {
+const SignupPageModel = () => {
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -21,6 +21,21 @@ const SignupPage = () => {
 
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef([]);
+
+  // ⬇️ Modal ref for outside click
+  const modalRef = useRef(null);
+
+  // ⬇️ Close modal on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
+        router.push("/"); // Close modal → navigate home
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
 
   // ----------------------------------------------------
   // HANDLE SIGNUP
@@ -56,10 +71,8 @@ const SignupPage = () => {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Move forward
     if (value && index < 3) inputRefs.current[index + 1].focus();
 
-    // Auto verify when 4 digits typed
     if (newOtp.join("").length === 4) {
       handleVerifyOtp();
     }
@@ -77,11 +90,6 @@ const SignupPage = () => {
   const handleVerifyOtp = async () => {
     try {
       const finalOtp = otp.join("");
-
-      // if (finalOtp.length !== 4) {
-      //   toast.error("Please enter complete OTP");
-      //   return;
-      // }
 
       setOtpLoading(true);
 
@@ -116,8 +124,9 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <motion.div
+        ref={modalRef} // <-- IMPORTANT
         initial={{ opacity: 0, scale: 0.88 }}
         animate={{ opacity: 1, scale: 1 }}
         className="bg-white w-full max-w-md rounded-2xl shadow-xl p-8"
@@ -172,7 +181,6 @@ const SignupPage = () => {
               <span className="font-medium"> {form.email}</span>
             </p>
 
-            {/* OTP Fields */}
             <div className="flex justify-center gap-3 mb-6">
               {[0, 1, 2, 3].map((i) => (
                 <input
@@ -187,7 +195,6 @@ const SignupPage = () => {
               ))}
             </div>
 
-            {/* Verify Button */}
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={handleVerifyOtp}
@@ -197,7 +204,6 @@ const SignupPage = () => {
               {otpLoading ? "Verifying..." : "Verify OTP"}
             </motion.button>
 
-            {/* Resend OTP */}
             <button
               onClick={handleResendOtp}
               disabled={resendLoading}
@@ -212,4 +218,4 @@ const SignupPage = () => {
   );
 };
 
-export default SignupPage;
+export default SignupPageModel;
