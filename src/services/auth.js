@@ -46,7 +46,24 @@ export const ResendOTP = async (data) => {
     headers: {
       "Content-Type": "application/json",
     },
-    data:{email: data},
+    data: { email: data },
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    toast.error(error?.response?.data?.message);
+  }
+};
+
+export const authLogout = async () => {
+  const config = {
+    method: "POST",
+    maxBodyLength: Infinity,
+    url: `/auth/logout`,
+    headers: {
+      "Content-Type": "application/json",
+    },
   };
   try {
     const res = await axiosInstance.request(config);

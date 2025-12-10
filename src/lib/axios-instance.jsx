@@ -3,11 +3,7 @@ import { BASEURL } from "./config";
 
 const axiosInstance = axios.create({
   baseURL: BASEURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  withCredentials: true,
 });
-
-axiosInstance.interceptors.response.use((response) => response);
 
 export default axiosInstance;
