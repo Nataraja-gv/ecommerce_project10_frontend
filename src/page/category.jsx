@@ -19,14 +19,14 @@ export default function CategoryPage() {
 
   return (
     <div className="">
-      <h1 className="text-2xl font-bold mb-6">Categories</h1>
-      <div className="flex flex-wrap ">
+      <h1 className="text-2xl font-bold mb-4">Categories</h1>
+      <div className="flex flex-wrap  gap-6 cursor-pointer">
         {categoryLists.map((category) => (
           <div key={category._id}>
             <img
               src={category.category_image.image_link}
               alt={category.category_name}
-              className="w-32 h-32 object-contain mb-4"
+              className="w-25 h-30  mb-4"
             />
           </div>
         ))}

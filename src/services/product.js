@@ -1,13 +1,13 @@
 import axiosInstance from "@/lib/axios-instance";
 
-export const getCategories = async () => {
+export const getProducts = async () => {
   const config = {
     method: "GET",
     maxBodyLength: Infinity,
     headers: {
       "Content-Type": "application/json",
     },
-    url: "/category/all",
+    url: "/product/all",
     params: {
       pagination: false,
     },
