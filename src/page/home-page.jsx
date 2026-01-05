@@ -1,9 +1,10 @@
 import React from 'react'
+import CategoryPage from './category'
 
 const HomePage = () => {
   return (
     <div>
-      home page
+      <CategoryPage/>
     </div>
   )
 }
