@@ -5,26 +5,40 @@ import Footer from "./footer";
 import { useSelector, useDispatch } from "react-redux";
 import { setUser, setIsAuthenticated } from "@/feature/user-slice";
 import { AuthProfile } from "@/services/profile";
+import { getuserCartItems } from "@/services/cart";
+import { setCart } from "@/feature/addtocart_slice";
 
 const MainLayout = ({ children }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.user);
 
   useEffect(() => {
-    if (user) return;
-    const fetchProfile = async () => {
+    const initApp = async () => {
       try {
-        const res = await AuthProfile();
-        if (res?.data) {
-          dispatch(setUser(res?.data));
+        // 1️⃣ Fetch user
+        const profileRes = await AuthProfile();
+        if (profileRes?.data) {
+          dispatch(setUser(profileRes.data));
           dispatch(setIsAuthenticated(true));
         }
-      } catch (error) {}
+
+        // 2️⃣ Fetch cart
+        const cartRes = await getuserCartItems();
+
+        const normalizedCart =
+          cartRes?._payload?.items?.map((item) => ({
+            product: item.product._id,
+            quantity: item.quantity,
+          })) || [];
+
+        dispatch(setCart(normalizedCart));
+      } catch (error) {
+        console.error(error);
+      }
     };
-    if (!user) {
-      fetchProfile();
-    }
-  }, [user]);
+
+    initApp();
+  }, [dispatch]);
 
   return (
     <div>

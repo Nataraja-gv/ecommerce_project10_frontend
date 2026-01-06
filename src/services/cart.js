@@ -36,3 +36,20 @@ export const removeFromCartApi = async (data) => {
     toast.error(error?.response?.data?.message);
   }
 };
+
+export const getuserCartItems = async () => {
+  const config = {
+    method: "GET",
+    maxBodyLength: Infinity,
+    url: `/auth/customer/cart/items`,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    toast.error(error?.response?.data?.message);
+  }
+};

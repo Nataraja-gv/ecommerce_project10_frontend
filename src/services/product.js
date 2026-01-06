@@ -19,3 +19,20 @@ export const getProducts = async () => {
     console.log(error.message);
   }
 };
+
+export const getProductsDetails = async (productId) => {
+  const config = {
+    method: "GET",
+    maxBodyLength: Infinity,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: `/product/${productId}`,
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    toast.error(error?.response?.data?.message);
+  }
+};
