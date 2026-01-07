@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "./navbar";
 import Footer from "./footer";
 import { useSelector, useDispatch } from "react-redux";
@@ -11,6 +11,7 @@ import { setCart } from "@/feature/addtocart_slice";
 const MainLayout = ({ children }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.user);
+  const [cartsItemsList, setCartsItemsList] = useState([]);
 
   useEffect(() => {
     const initApp = async () => {
@@ -24,7 +25,7 @@ const MainLayout = ({ children }) => {
 
         // 2️⃣ Fetch cart
         const cartRes = await getuserCartItems();
-
+        setCartsItemsList(cartRes?._payload?.items);
         const normalizedCart =
           cartRes?._payload?.items?.map((item) => ({
             product: item.product._id,
@@ -42,7 +43,7 @@ const MainLayout = ({ children }) => {
 
   return (
     <div>
-      <Navbar user={user} />
+      <Navbar user={user} cartsItemsList={cartsItemsList} />
       <div className="max-w-7xl mx-auto flex items-center justify-between py-3 px-4 md:px-6">
         {children}
       </div>

@@ -13,14 +13,18 @@ import {
 import SignupPageModel from "@/page/signin-model";
 import { authLogout } from "@/services/auth";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setIsAuthenticated, setUser } from "@/feature/user-slice";
+import CartDrawer from "@/page/cart/cartDrawer";
 
-const Navbar = ({ user }) => {
+const Navbar = ({ user, cartsItemsList }) => {
   const [openLogin, setOpenLogin] = useState(false);
   const [openProfile, setOpenProfile] = useState(false);
   const [loadingLogout, setLoadingLogout] = useState(false);
   const profileRef = useRef(null);
+  const cartItems = useSelector((state) => state.cartItem.items);
+  const [cartDrawer, setCartDrawer] = useState(false);
+
   const dispatch = useDispatch();
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -149,11 +153,14 @@ const Navbar = ({ user }) => {
             )}
 
             {/* CART */}
-            <button className="relative flex items-center bg-purple-700 text-white px-4 py-2 rounded-full hover:bg-purple-800 shadow-sm transition">
+            <button
+              onClick={() => setCartDrawer(!cartDrawer)}
+              className="relative flex items-center cursor-pointer bg-purple-700 text-white px-4 py-2 rounded-full hover:bg-purple-800 shadow-sm transition"
+            >
               <ShoppingCart size={20} className="mr-2" />
               Cart
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
-                0
+                {cartItems?.length || 0}
               </span>
             </button>
           </div>
@@ -173,6 +180,13 @@ const Navbar = ({ user }) => {
       {/* LOGIN MODAL */}
       {!user && openLogin && (
         <SignupPageModel closeModal={() => setOpenLogin(false)} />
+      )}
+      {cartDrawer && (
+        <CartDrawer
+          open={cartDrawer}
+          close={() => setCartDrawer(false)}
+          cartsItemsList={cartsItemsList}
+        />
       )}
     </>
   );
