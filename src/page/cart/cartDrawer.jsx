@@ -1,4 +1,4 @@
- import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch } from "react-redux";
 import { increaseQuantity, decreaseQuantity } from "@/feature/addtocart_slice";
 import {
@@ -7,10 +7,19 @@ import {
   removeFromCartApi,
 } from "@/services/cart";
 import { toast } from "react-toastify";
+import AddressModal from "../address/addressModel";
+import {
+  getAddress,
+  PostSelectedAddress,
+} from "@/services/address/postaddress";
+import { MapPin, ChevronDown } from "lucide-react";
 
 export default function CartDrawer({ open, close }) {
   const dispatch = useDispatch();
   const [cartsItemsList, setCartsItemsList] = useState([]);
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [refreshState, setRefreshState] = useState(false);
 
   // 🔁 Fetch cart items
   const fetchCart = async () => {
@@ -78,12 +87,39 @@ export default function CartDrawer({ open, close }) {
   };
 
   // 💰 Total
+
   const totalAmount = useMemo(() => {
     return cartsItemsList.reduce(
       (sum, item) => sum + item.product.product_price * item.quantity,
-      0
+      0,
     );
   }, [cartsItemsList]);
+
+  useEffect(() => {
+    const SelectedAddres = async () => {
+      try {
+        const res = await getAddress();
+
+        const selected = res?.addresses?.find(
+          (address) => address?.selected_address === true,
+        );
+        if (selected) {
+          setSelectedAddress(selected);
+        }
+      } catch (error) {
+        console.error("Error fetching selected address:", error);
+      }
+    };
+    SelectedAddres();
+  }, [selectedAddress, refreshState]);
+
+  const selectedAddressSubmit = async (address) => {
+    try {
+      await PostSelectedAddress(address._id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <>
@@ -104,7 +140,32 @@ export default function CartDrawer({ open, close }) {
       >
         {/* Header (Sticky) */}
         <div className="sticky top-0 bg-white z-10 px-4 py-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-semibold">My Cart</h2>
+          {selectedAddress ? (
+            <div
+              onClick={() => setAddressModalOpen(true)}
+              className="flex items-start gap-2 cursor-pointer"
+            >
+              {/* Location Icon */}
+              <MapPin size={18} className="text-pink-600 mt-1" />
+
+              {/* Address Text */}
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-500 flex items-center gap-1">
+                  Delivering to
+                  <ChevronDown size={14} />
+                </span>
+
+                <span className="text-sm font-semibold truncate max-w-[260px]">
+                  {selectedAddress.address_type || "Other"} –{" "}
+                  {selectedAddress.delivery_address}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <span className="text-lg font-semibold">My Cart</span>
+          )}
+
+          {/* Close button stays same */}
           <button
             onClick={close}
             className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-xl"
@@ -174,19 +235,37 @@ export default function CartDrawer({ open, close }) {
         </div>
 
         {/* Bill Summary */}
-        <div className="border-t px-4 py-4 text-sm space-y-2 bg-gray-50">
-          <div className="flex justify-between text-gray-600">
-            <span>Item total</span>
-            <span>₹{totalAmount}</span>
+        <div className="w-[95%] max-w-sm mx-auto bg-white border rounded-xl overflow-hidden shadow-sm mb-5">
+          {/* Header */}
+          <div className="px-4 py-3 border-b font-semibold">Bill summary</div>
+
+          {/* Bill details */}
+          <div className="px-4 py-3 text-sm space-y-2">
+            {/* Item Total */}
+            <div className="flex justify-between text-gray-700">
+              <span>Item total</span>
+              <span>
+                <span className="line-through text-gray-400 mr-1">₹525</span>₹
+                {totalAmount}
+              </span>
+            </div>
+
+            {/* Handling Fee */}
+            <div className="flex justify-between text-gray-700">
+              <span>Handling fee</span>
+              <span className="text-green-600 font-medium">FREE</span>
+            </div>
+
+            {/* Delivery Fee */}
+            <div className="flex justify-between text-gray-700">
+              <span>Delivery fee</span>
+              <span className="text-green-600 font-medium">FREE</span>
+            </div>
           </div>
 
-          <div className="flex justify-between text-green-600">
-            <span>Delivery fee</span>
-            <span>FREE</span>
-          </div>
-
-          <div className="flex justify-between font-semibold text-base text-black">
-            <span>To pay</span>
+          {/* To Pay */}
+          <div className="px-4 py-3 border-t flex justify-between font-semibold text-base">
+            <span>To Pay</span>
             <span>₹{totalAmount}</span>
           </div>
         </div>
@@ -194,13 +273,29 @@ export default function CartDrawer({ open, close }) {
         {/* Footer (Sticky) */}
         <div className="sticky bottom-0 bg-white border-t px-4 py-4">
           <button
+            onClick={() => setAddressModalOpen(true)}
             className="w-full bg-pink-600 hover:bg-pink-700 text-white
-            py-3 rounded-xl font-semibold text-base transition"
+  py-3 rounded-xl font-semibold text-base transition"
           >
-            Add Address to proceed
+            {selectedAddress
+              ? `Proceed to Pay ₹${totalAmount}`
+              : "Add Address to proceed"}
           </button>
         </div>
       </div>
+      {addressModalOpen && (
+        <AddressModal
+          isOpen={addressModalOpen}
+          onClose={() => setAddressModalOpen(false)}
+          onSelect={(address) => {
+            setSelectedAddress(address);
+            setAddressModalOpen(false);
+            selectedAddressSubmit(address);
+            toast.success("Address selected");
+          }}
+          setRefreshState={setRefreshState}
+        />
+      )}
     </>
   );
 }

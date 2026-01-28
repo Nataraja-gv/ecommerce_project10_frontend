@@ -7,11 +7,13 @@ import { setUser, setIsAuthenticated } from "@/feature/user-slice";
 import { AuthProfile } from "@/services/profile";
 import { getuserCartItems } from "@/services/cart";
 import { setCart } from "@/feature/addtocart_slice";
+import { useRouter } from "next/navigation";
 
 const MainLayout = ({ children }) => {
   const dispatch = useDispatch();
   const user = useSelector((state) => state.user.user);
   const [cartsItemsList, setCartsItemsList] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const initApp = async () => {
@@ -40,6 +42,8 @@ const MainLayout = ({ children }) => {
 
     initApp();
   }, [dispatch]);
+
+ 
 
   return (
     <div>

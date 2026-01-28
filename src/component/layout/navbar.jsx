@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { setIsAuthenticated, setUser } from "@/feature/user-slice";
 import CartDrawer from "@/page/cart/cartDrawer";
+import Cookies from "js-cookie";
 
 const Navbar = ({ user, cartsItemsList }) => {
   const [openLogin, setOpenLogin] = useState(false);
@@ -56,7 +57,19 @@ const Navbar = ({ user, cartsItemsList }) => {
       setLoadingLogout(false);
     }
   };
+  useEffect(() => {
+  const interval = setInterval(() => {
+    const token = Cookies.get("auth_token");
 
+    if (!token) {
+      setOpenLogin(true);
+    } else {
+      setOpenLogin(false);
+    }
+  }, 1000); // every 1 second
+
+  return () => clearInterval(interval);
+}, []);
   return (
     <>
       <nav className="w-full bg-white shadow-md sticky top-0 z-50">
@@ -185,7 +198,7 @@ const Navbar = ({ user, cartsItemsList }) => {
         <CartDrawer
           open={cartDrawer}
           close={() => setCartDrawer(false)}
-          cartsItemsList={cartsItemsList}
+          // cartsItemsList={cartsItemsList}
         />
       )}
     </>
