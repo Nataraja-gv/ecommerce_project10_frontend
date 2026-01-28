@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { increaseQuantity, decreaseQuantity } from "@/feature/addtocart_slice";
 import {
@@ -12,212 +12,187 @@ import {
   getAddress,
   PostSelectedAddress,
 } from "@/services/address/postaddress";
-import { MapPin, ChevronDown } from "lucide-react";
+import { MapPin, ChevronDown, ShoppingCart } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function CartDrawer({ open, close }) {
   const dispatch = useDispatch();
-  const [cartsItemsList, setCartsItemsList] = useState([]);
+  const [items, setItems] = useState([]);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
-  const [refreshState, setRefreshState] = useState(false);
+  const [loading, setLoading] = useState(false);
+   const [refershState, setRefreshState] = useState(false);
 
-  // 🔁 Fetch cart items
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
+      setLoading(true);
       const res = await getuserCartItems();
-      setCartsItemsList(res?._payload?.items || []);
-    } catch (err) {
-      console.error(err);
+      setItems(res?._payload?.items || []);
+    } catch {
+      toast.error("Failed to load cart");
+    } finally {
+      setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCart();
-  }, []);
+  }, [fetchCart]);
 
-  // 🔒 Lock scroll
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "auto";
     return () => (document.body.style.overflow = "auto");
   }, [open]);
 
-  // ⌨️ ESC close
   useEffect(() => {
     const esc = (e) => e.key === "Escape" && close();
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
   }, [close]);
 
-  // ➕ Increase
   const handleIncrease = async (item) => {
-    try {
-      dispatch(increaseQuantity({ product: item.product._id }));
-      await addTocart({
-        items: {
-          product: item.product._id,
-          quantity: item.quantity + 1,
-        },
-      });
-      fetchCart();
-    } catch {
-      toast.error("Failed to update cart");
-    }
+    dispatch(increaseQuantity({ product: item.product._id }));
+    await addTocart({
+      items: { product: item.product._id, quantity: item.quantity + 1 },
+    });
+    fetchCart();
   };
 
-  // ➖ Decrease / Remove
   const handleDecrease = async (item) => {
-    try {
-      if (item.quantity === 1) {
-        dispatch(decreaseQuantity({ product: item.product._id }));
-        await removeFromCartApi({ product: item.product._id });
-        toast.success("Item removed");
-      } else {
-        dispatch(decreaseQuantity({ product: item.product._id }));
-        await addTocart({
-          items: {
-            product: item.product._id,
-            quantity: item.quantity - 1,
-          },
-        });
-      }
-      fetchCart();
-    } catch {
-      toast.error("Failed to update cart");
+    dispatch(decreaseQuantity({ product: item.product._id }));
+    if (item.quantity === 1) {
+      await removeFromCartApi({ product: item.product._id });
+      toast.success("Item removed");
+    } else {
+      await addTocart({
+        items: { product: item.product._id, quantity: item.quantity - 1 },
+      });
     }
+    fetchCart();
   };
 
-  // 💰 Total
-
-  const totalAmount = useMemo(() => {
-    return cartsItemsList.reduce(
-      (sum, item) => sum + item.product.product_price * item.quantity,
-      0,
-    );
-  }, [cartsItemsList]);
+  const totalAmount = useMemo(
+    () => items.reduce((s, i) => s + i.product.product_price * i.quantity, 0),
+    [items],
+  );
 
   useEffect(() => {
-    const SelectedAddres = async () => {
-      try {
-        const res = await getAddress();
+    (async () => {
+      const res = await getAddress();
+      const selected = res?.addresses?.find((a) => a.selected_address);
+      if (selected) setSelectedAddress(selected);
+    })();
+  }, [selectedAddress,refershState]);
 
-        const selected = res?.addresses?.find(
-          (address) => address?.selected_address === true,
-        );
-        if (selected) {
-          setSelectedAddress(selected);
-        }
-      } catch (error) {
-        console.error("Error fetching selected address:", error);
-      }
-    };
-    SelectedAddres();
-  }, [selectedAddress, refreshState]);
-
-  const selectedAddressSubmit = async (address) => {
-    try {
-      await PostSelectedAddress(address._id);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const totalMrpAmountAllItems = items?.reduce((arr, item) => {
+    return arr + item.product.mrp * item.quantity;
+  }, 0);
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        onClick={close}
-        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity
-        ${open ? "opacity-100 visible" : "opacity-0 invisible"}`}
-      />
-
-      {/* Drawer */}
-      <div
-        className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[380px] bg-white
-        flex flex-col
-        shadow-[-4px_0_20px_rgba(0,0,0,0.2)]
-        transform transition-transform duration-300
-        ${open ? "translate-x-0" : "translate-x-full"}`}
-      >
-        {/* Header (Sticky) */}
-        <div className="sticky top-0 bg-white z-10 px-4 py-4 border-b flex items-center justify-between">
-          {selectedAddress ? (
-            <div
-              onClick={() => setAddressModalOpen(true)}
-              className="flex items-start gap-2 cursor-pointer"
-            >
-              {/* Location Icon */}
-              <MapPin size={18} className="text-pink-600 mt-1" />
-
-              {/* Address Text */}
-              <div className="flex flex-col">
-                <span className="text-xs text-gray-500 flex items-center gap-1">
-                  Delivering to
-                  <ChevronDown size={14} />
-                </span>
-
-                <span className="text-sm font-semibold truncate max-w-[260px]">
-                  {selectedAddress.address_type || "Other"} –{" "}
-                  {selectedAddress.delivery_address}
-                </span>
-              </div>
-            </div>
-          ) : (
-            <span className="text-lg font-semibold">My Cart</span>
-          )}
-
-          {/* Close button stays same */}
-          <button
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={close}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center text-xl"
+          />
+
+          <motion.aside
+            className="fixed right-0 top-0 z-50 h-full w-full sm:w-[420px] bg-white flex flex-col shadow-2xl"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
           >
-            ✕
-          </button>
-        </div>
+            {/* Header */}
+            <div className="sticky top-0 z-10 bg-white border-b px-4 py-4 flex justify-between items-center">
+              {selectedAddress ? (
+                <button
+                  onClick={() => setAddressModalOpen(true)}
+                  className="flex gap-2 items-start text-left"
+                >
+                  <MapPin className="text-pink-600 mt-1" size={18} />
+                  <div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      Delivering to <ChevronDown size={14} />
+                    </div>
+                    <div className="text-sm font-semibold truncate max-w-[260px]">
+                      {selectedAddress?.address_type} –{" "}
+                      {selectedAddress?.delivery_address}
+                    </div>
+                  </div>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 font-semibold">
+                  <ShoppingCart size={18} /> My Cart
+                </div>
+              )}
 
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {cartsItemsList.length === 0 ? (
-            <div className="flex flex-col items-center justify-center mt-16 text-gray-500">
-              <p className="text-sm">Your cart is empty</p>
+              <button
+                onClick={close}
+                className="rounded-full p-2 hover:bg-gray-100"
+              >
+                ✕
+              </button>
             </div>
-          ) : (
-            cartsItemsList.map((item) => {
-              const { product, quantity } = item;
-              const image = product.product_images?.[0]?.image_link;
 
-              return (
-                <div
-                  key={product._id}
-                  className="flex items-start gap-3 border-b pb-4"
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {loading && (
+                <div className="text-center text-sm text-gray-400">
+                  Loading cart…
+                </div>
+              )}
+
+              {!loading && items.length === 0 && (
+                <div className="flex flex-col items-center justify-center mt-20 text-gray-500">
+                  <ShoppingCart size={48} className="mb-3 opacity-40" />
+                  <p>Your cart is empty</p>
+                </div>
+              )}
+
+              {items.map((item) => (
+                <motion.div
+                  key={item.product._id}
+                  layout
+                  className="flex gap-3 border-b pb-4"
                 >
                   <img
-                    src={image}
-                    alt={product.product_name}
-                    className="w-16 h-16 rounded-lg border object-contain"
+                    src={item.product.product_images?.[0]?.image_link}
+                    alt={item.product.product_name}
+                    className="w-16 h-16 rounded-xl border object-contain"
                   />
 
                   <div className="flex-1">
                     <p className="text-sm font-medium line-clamp-2">
-                      {product.product_name}
+                      {item.product.product_name}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      ₹{product.product_price}
-                    </p>
+                    <div className="flex gap-1">
+                      <p className="text-xs text-gray-500 line-through">
+                        ₹{item?.product?.mrp}{" "}
+                      </p>
+                      <p className="text-xs text-black">
+                        ₹{item.product.product_price}
+                      </p>
+                    </div>
 
                     <div className="mt-2 flex items-center gap-2">
-                      <div className="flex items-center border rounded-lg overflow-hidden">
+                      <div className="flex items-center border rounded-lg">
                         <button
                           onClick={() => handleDecrease(item)}
-                          className="px-3 py-1 text-lg hover:bg-gray-100"
+                          className="px-3 py-1"
                         >
                           −
                         </button>
                         <span className="px-3 text-sm font-medium">
-                          {quantity}
+                          {item.quantity}
                         </span>
                         <button
                           onClick={() => handleIncrease(item)}
-                          className="px-3 py-1 text-lg hover:bg-gray-100"
+                          className="px-3 py-1"
                         >
                           +
                         </button>
@@ -225,77 +200,70 @@ export default function CartDrawer({ open, close }) {
                     </div>
                   </div>
 
-                  <p className="text-sm font-semibold whitespace-nowrap">
-                    ₹{product.product_price * quantity}
-                  </p>
+                  <div className="font-semibold text-sm">
+                    ₹{item.product.product_price * item.quantity}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Bill */}
+            {items.length > 0 && (
+              <div className="mx-4 mb-4 border rounded-xl overflow-hidden">
+                <div className="px-4 py-3 font-semibold border-b">
+                  Bill summary
                 </div>
-              );
-            })
+                <div className="px-4 py-3 text-sm space-y-2">
+                  <div className="flex justify-between">
+                    <span>Item total</span>
+                    <div>
+                      <span className=" text-gray-300 line-through">
+                        {" "}
+                        ₹{totalMrpAmountAllItems}
+                      </span>
+                      <span> ₹{totalAmount}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>Delivery</span>
+                    <span>FREE</span>
+                  </div>
+                </div>
+                <div className="px-4 py-3 border-t font-semibold flex justify-between">
+                  <span>To Pay</span>
+                  <span>₹{totalAmount}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="sticky bottom-0 border-t bg-white px-4 py-4">
+              <button
+                onClick={() => setAddressModalOpen(true)}
+                className="w-full rounded-xl bg-pink-600 py-3 text-white font-semibold hover:bg-pink-700"
+              >
+                {selectedAddress
+                  ? `Proceed to Pay ₹${totalAmount}`
+                  : "Add Address to proceed"}
+              </button>
+            </div>
+          </motion.aside>
+
+          {addressModalOpen && (
+            <AddressModal
+              isOpen={addressModalOpen}
+              onClose={() => setAddressModalOpen(false)}
+              onSelect={async (address) => {
+                setSelectedAddress(address);
+                await PostSelectedAddress(address._id);
+                toast.success("Address selected");
+                setAddressModalOpen(false);
+              }}
+              setRefreshState={setRefreshState}
+            />
           )}
-        </div>
-
-        {/* Bill Summary */}
-        <div className="w-[95%] max-w-sm mx-auto bg-white border rounded-xl overflow-hidden shadow-sm mb-5">
-          {/* Header */}
-          <div className="px-4 py-3 border-b font-semibold">Bill summary</div>
-
-          {/* Bill details */}
-          <div className="px-4 py-3 text-sm space-y-2">
-            {/* Item Total */}
-            <div className="flex justify-between text-gray-700">
-              <span>Item total</span>
-              <span>
-                <span className="line-through text-gray-400 mr-1">₹525</span>₹
-                {totalAmount}
-              </span>
-            </div>
-
-            {/* Handling Fee */}
-            <div className="flex justify-between text-gray-700">
-              <span>Handling fee</span>
-              <span className="text-green-600 font-medium">FREE</span>
-            </div>
-
-            {/* Delivery Fee */}
-            <div className="flex justify-between text-gray-700">
-              <span>Delivery fee</span>
-              <span className="text-green-600 font-medium">FREE</span>
-            </div>
-          </div>
-
-          {/* To Pay */}
-          <div className="px-4 py-3 border-t flex justify-between font-semibold text-base">
-            <span>To Pay</span>
-            <span>₹{totalAmount}</span>
-          </div>
-        </div>
-
-        {/* Footer (Sticky) */}
-        <div className="sticky bottom-0 bg-white border-t px-4 py-4">
-          <button
-            onClick={() => setAddressModalOpen(true)}
-            className="w-full bg-pink-600 hover:bg-pink-700 text-white
-  py-3 rounded-xl font-semibold text-base transition"
-          >
-            {selectedAddress
-              ? `Proceed to Pay ₹${totalAmount}`
-              : "Add Address to proceed"}
-          </button>
-        </div>
-      </div>
-      {addressModalOpen && (
-        <AddressModal
-          isOpen={addressModalOpen}
-          onClose={() => setAddressModalOpen(false)}
-          onSelect={(address) => {
-            setSelectedAddress(address);
-            setAddressModalOpen(false);
-            selectedAddressSubmit(address);
-            toast.success("Address selected");
-          }}
-          setRefreshState={setRefreshState}
-        />
+        </>
       )}
-    </>
+    </AnimatePresence>
   );
 }
