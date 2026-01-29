@@ -23,6 +23,7 @@ export default function CartDrawer({ open, close }) {
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refershState, setRefreshState] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("COD");
 
   const fetchCart = useCallback(async () => {
     try {
@@ -83,7 +84,7 @@ export default function CartDrawer({ open, close }) {
       const selected = res?.addresses?.find((a) => a.selected_address);
       if (selected) setSelectedAddress(selected);
     })();
-  }, [  refershState]);
+  }, [refershState]);
 
   const totalMrpAmountAllItems = items?.reduce((arr, item) => {
     return arr + item.product.mrp * item.quantity;
@@ -91,10 +92,18 @@ export default function CartDrawer({ open, close }) {
 
   const handleSubmitOrder = async () => {
     try {
-      const orderPayload = {};
+      const orderPayload = {
+        address_details: selectedAddress._id,
+        payment_method: paymentMethod,
+        items: items.map((item) => ({
+          product: item.product._id,
+          quantity: item.quantity,
+        })),
+      };
       const res = await createAOrder(orderPayload);
       if (res) {
         toast.success("Order placed successfully");
+        close();
       }
     } catch (error) {
       toast.error(error?.message || "Failed to place order");

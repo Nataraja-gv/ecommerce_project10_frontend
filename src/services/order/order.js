@@ -9,7 +9,7 @@ export const createAOrder = async (data) => {
     headers: {
       "Content-Type": "application/json",
     },
-    data: data,
+    data 
   };
   try {
     const res = await axiosInstance.request(config);
