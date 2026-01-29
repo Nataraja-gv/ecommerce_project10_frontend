@@ -14,6 +14,7 @@ import {
 } from "@/services/address/postaddress";
 import { MapPin, ChevronDown, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createAOrder } from "@/services/order/order";
 
 export default function CartDrawer({ open, close }) {
   const dispatch = useDispatch();
@@ -21,7 +22,7 @@ export default function CartDrawer({ open, close }) {
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [loading, setLoading] = useState(false);
-   const [refershState, setRefreshState] = useState(false);
+  const [refershState, setRefreshState] = useState(false);
 
   const fetchCart = useCallback(async () => {
     try {
@@ -82,11 +83,23 @@ export default function CartDrawer({ open, close }) {
       const selected = res?.addresses?.find((a) => a.selected_address);
       if (selected) setSelectedAddress(selected);
     })();
-  }, [selectedAddress,refershState]);
+  }, [  refershState]);
 
   const totalMrpAmountAllItems = items?.reduce((arr, item) => {
     return arr + item.product.mrp * item.quantity;
   }, 0);
+
+  const handleSubmitOrder = async () => {
+    try {
+      const orderPayload = {};
+      const res = await createAOrder(orderPayload);
+      if (res) {
+        toast.success("Order placed successfully");
+      }
+    } catch (error) {
+      toast.error(error?.message || "Failed to place order");
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -238,13 +251,16 @@ export default function CartDrawer({ open, close }) {
 
             {/* Footer */}
             <div className="sticky bottom-0 border-t bg-white px-4 py-4">
-              <button
-                onClick={() => setAddressModalOpen(true)}
-                className="w-full rounded-xl bg-pink-600 py-3 text-white font-semibold hover:bg-pink-700"
-              >
-                {selectedAddress
-                  ? `Proceed to Pay ₹${totalAmount}`
-                  : "Add Address to proceed"}
+              <button className="w-full rounded-xl bg-pink-600 py-3 text-white font-semibold hover:bg-pink-700">
+                {selectedAddress ? (
+                  <span onClick={handleSubmitOrder}>
+                    Proceed to Pay ₹{totalAmount}
+                  </span>
+                ) : (
+                  <span onClick={() => setAddressModalOpen(true)}>
+                    Add Address to proceed
+                  </span>
+                )}
               </button>
             </div>
           </motion.aside>
