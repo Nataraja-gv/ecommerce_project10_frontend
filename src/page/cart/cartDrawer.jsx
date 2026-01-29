@@ -24,6 +24,7 @@ export default function CartDrawer({ open, close }) {
   const [loading, setLoading] = useState(false);
   const [refershState, setRefreshState] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
 
   const fetchCart = useCallback(async () => {
     try {
@@ -91,6 +92,10 @@ export default function CartDrawer({ open, close }) {
   }, 0);
 
   const handleSubmitOrder = async () => {
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
     try {
       const orderPayload = {
         address_details: selectedAddress._id,
@@ -134,7 +139,7 @@ export default function CartDrawer({ open, close }) {
               {selectedAddress ? (
                 <button
                   onClick={() => setAddressModalOpen(true)}
-                  className="flex gap-2 items-start text-left"
+                  className="flex gap-2 items-start text-left cursor-pointer"
                 >
                   <MapPin className="text-pink-600 mt-1" size={18} />
                   <div>
@@ -155,7 +160,7 @@ export default function CartDrawer({ open, close }) {
 
               <button
                 onClick={close}
-                className="rounded-full p-2 hover:bg-gray-100"
+                className="rounded-full p-2 hover:bg-gray-100 cursor-pointer"
               >
                 ✕
               </button>
@@ -205,7 +210,7 @@ export default function CartDrawer({ open, close }) {
                       <div className="flex items-center border rounded-lg">
                         <button
                           onClick={() => handleDecrease(item)}
-                          className="px-3 py-1"
+                          className="px-3 py-1 cursor-pointer"
                         >
                           −
                         </button>
@@ -214,7 +219,7 @@ export default function CartDrawer({ open, close }) {
                         </span>
                         <button
                           onClick={() => handleIncrease(item)}
-                          className="px-3 py-1"
+                          className="px-3 py-1 cursor-pointer"
                         >
                           +
                         </button>
@@ -260,9 +265,15 @@ export default function CartDrawer({ open, close }) {
 
             {/* Footer */}
             <div className="sticky bottom-0 border-t bg-white px-4 py-4">
-              <button className="w-full rounded-xl bg-pink-600 py-3 text-white font-semibold hover:bg-pink-700">
+              <button className="w-full rounded-xl bg-pink-600 py-3 text-white font-semibold hover:bg-pink-700 cursor-pointer">
                 {selectedAddress ? (
-                  <span onClick={handleSubmitOrder}>
+                  <span
+                    // onClick={handleSubmitOrder}
+                    onClick={() => {
+                      if (!selectedAddress) return setAddressModalOpen(true);
+                      setPaymentModalOpen(true);
+                    }}
+                  >
                     Proceed to Pay ₹{totalAmount}
                   </span>
                 ) : (
@@ -286,6 +297,89 @@ export default function CartDrawer({ open, close }) {
               }}
               setRefreshState={setRefreshState}
             />
+          )}
+          {/* PAYMENT MODAL */}
+          {/* PAYMENT MODAL */}
+          {paymentModalOpen && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                initial={{ y: 40, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 40, opacity: 0 }}
+                transition={{ type: "spring", damping: 20, stiffness: 250 }}
+                className="bg-white w-full sm:w-[460px] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl"
+              >
+                <h3 className="text-lg font-semibold mb-1">
+                  Choose payment method
+                </h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Select how you want to pay
+                </p>
+
+                {/* OPTIONS */}
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setPaymentMethod("COD")}
+                    className={`w-full flex items-center justify-between border rounded-2xl px-4 py-3 cursor-pointer transition ${
+                      paymentMethod === "COD"
+                        ? "border-pink-600 bg-pink-50"
+                        : "hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Cash on Delivery</p>
+                      <p className="text-xs text-gray-500">
+                        Pay when item arrives
+                      </p>
+                    </div>
+                    {paymentMethod === "COD" && (
+                      <span className="text-pink-600 font-bold">✓</span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setPaymentMethod("ONLINE")}
+                    className={`w-full flex items-center justify-between border rounded-2xl px-4 py-3  cursor-pointer transition ${
+                      paymentMethod === "ONLINE"
+                        ? "border-pink-600 bg-pink-50"
+                        : "hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className="font-medium">Online Payment</p>
+                      <p className="text-xs text-gray-500">
+                        UPI, Card, Netbanking
+                      </p>
+                    </div>
+                    {paymentMethod === "ONLINE" && (
+                      <span className="text-pink-600 font-bold">✓</span>
+                    )}
+                  </button>
+                </div>
+
+                {/* ACTIONS */}
+                <div className="flex gap-3 mt-6">
+                  <button
+                    className="flex-1 border rounded-xl py-3 text-sm font-medium  cursor-pointer"
+                    onClick={() => setPaymentModalOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={!paymentMethod}
+                    className="flex-1 rounded-xl py-3 text-sm font-semibold text-white bg-pink-600 disabled:opacity-50  cursor-pointer"
+                    onClick={handleSubmitOrder}
+                  >
+                    Place Order
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
         </>
       )}
