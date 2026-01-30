@@ -1,9 +1,11 @@
 "use client";
 import { getCategories } from "@/services/category";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 export default function CategoryPage() {
   const [categoryLists, setCategoryList] = useState([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCategory = async () => {
@@ -22,7 +24,12 @@ export default function CategoryPage() {
       <h1 className="text-2xl font-bold mb-4">Categories</h1>
       <div className="flex flex-wrap  gap-6 cursor-pointer">
         {categoryLists.map((category) => (
-          <div key={category._id}>
+          <div
+            key={category._id}
+            onClick={() =>
+              router.push(`/category/${category._id}?${category.category_name}`)
+            }
+          >
             <img
               src={category.category_image.image_link}
               alt={category.category_name}

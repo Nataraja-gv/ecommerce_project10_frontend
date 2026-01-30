@@ -19,6 +19,7 @@ import { setIsAuthenticated, setUser } from "@/feature/user-slice";
 import CartDrawer from "@/page/cart/cartDrawer";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { getAddress } from "@/services/address/postaddress";
 
 const Navbar = ({ user, cartsItemsList }) => {
   const [openLogin, setOpenLogin] = useState(false);
@@ -26,9 +27,10 @@ const Navbar = ({ user, cartsItemsList }) => {
   const [loadingLogout, setLoadingLogout] = useState(false);
   const profileRef = useRef(null);
   const cartItems = useSelector((state) => state.cartItem.items);
+  const [selectedAddress, setSelectedAddress] = useState(null);
 
   const [cartDrawer, setCartDrawer] = useState(false);
-   const router = useRouter();
+  const router = useRouter();
 
   const dispatch = useDispatch();
   // Close dropdown when clicking outside
@@ -62,37 +64,55 @@ const Navbar = ({ user, cartsItemsList }) => {
     }
   };
   useEffect(() => {
-    const interval = setInterval(() => {
-      const token = Cookies.get("auth_token");
+    const token = Cookies.get("auth_token");
 
-      if (!token) {
-        setOpenLogin(true);
-      } else {
-        setOpenLogin(false);
-      }
-    }, 1000); // every 1 second
-
-    return () => clearInterval(interval);
+    if (!token) {
+      setOpenLogin(true);
+    } else {
+      setOpenLogin(false);
+    }
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const res = await getAddress();
+      const selected = res?.addresses?.find((a) => a.selected_address);
+      if (selected) setSelectedAddress(selected);
+    })();
+  }, []);
+
   return (
     <>
       <nav className="w-full bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between py-3 px-4 md:px-6">
           {/* LEFT AREA */}
           <div className="flex items-center gap-6">
-            <h1 onClick={() => router.push("/")} className="text-3xl font-extrabold text-purple-700 tracking-tight cursor-pointer">
+            <h1
+              onClick={() => router.push("/")}
+              className="text-3xl font-extrabold text-purple-700 tracking-tight cursor-pointer"
+            >
               FreshNow
             </h1>
 
             <div className="hidden sm:flex flex-col leading-tight">
-              <span className="text-xs font-semibold text-green-600">
-                ⚡ Delivery in 7 min
+              <span className="text-xs font-semibold text-green-600 flex items-center gap-1">
+                ⚡ <span>Delivery in 7 min</span>
               </span>
 
-              <button className="flex items-center text-gray-800 text-sm hover:text-purple-700 transition cursor-pointer">
-                <MapPin size={15} className="mr-1 text-purple-600" />
-                Narasimhaswamy Layout – 32nd Cross
-                <ChevronDown size={14} className="ml-1 text-purple-600" />
+              <button className="group flex items-center text-gray-800 text-sm font-medium hover:text-purple-700 transition cursor-pointer w-[270px] truncate">
+                <MapPin
+                  size={15}
+                  className="mr-1 text-purple-600 group-hover:text-purple-700 transition shrink-0"
+                />
+
+                <span className="truncate">
+                  {selectedAddress?.delivery_address}
+                </span>
+
+                <ChevronDown
+                  size={14}
+                  className="ml-1 text-purple-600 group-hover:text-purple-700 transition"
+                />
               </button>
             </div>
           </div>

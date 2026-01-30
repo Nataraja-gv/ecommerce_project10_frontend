@@ -36,3 +36,20 @@ export const getProductsDetails = async (productId) => {
     toast.error(error?.response?.data?.message);
   }
 };
+
+export const getProductsByCategory = async (categoryId) => {
+  const config = {
+    method: "GET",
+    maxBodyLength: Infinity,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    url: `/products/category/${categoryId}`,
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    toast.error(error?.response?.data?.message);
+  }
+};

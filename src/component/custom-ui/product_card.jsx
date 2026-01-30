@@ -110,7 +110,7 @@ export default function ProductCard({ product }) {
 
   return (
     <Link href={`/product/${_id}`}>
-      <div className="bg-white border  border-gray-300 rounded-xl p-3 hover:shadow-md transition">
+      <div className="bg-white border w-full  border-gray-300 rounded-xl p-3 hover:shadow-md transition">
         {/* Image */}
         <div className="relative flex justify-center">
           <img
