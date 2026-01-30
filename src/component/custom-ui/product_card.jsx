@@ -31,7 +31,7 @@ export default function ProductCard({ product }) {
         addToCart({
           product: _id,
           quantity: 1,
-        })
+        }),
       );
 
       const data = {
@@ -113,11 +113,13 @@ export default function ProductCard({ product }) {
       <div className="bg-white border w-full  border-gray-300 rounded-xl p-3 hover:shadow-md transition">
         {/* Image */}
         <div className="relative flex justify-center">
-          <img
-            src={image}
-            alt={product_name}
-            className="h-28 w-28 object-contain"
-          />
+          <div className="w-50 aspect-video">
+            <img
+              src={image}
+              alt={product_name}
+              className="h-full w-full object-contain"
+            />
+          </div>
 
           {discount_percentage > 0 && (
             <span className="absolute top-1 left-1 bg-green-600 text-white text-xs font-semibold px-2 py-0.5 rounded-md">
@@ -169,7 +171,7 @@ export default function ProductCard({ product }) {
                 stopLink(e);
                 handleAddToCart();
               }}
-              className="mt-2 w-full border border-pink-600 text-pink-600 text-sm font-semibold py-1.5 rounded-lg
+              className="mt-2 w-full border cursor-pointer border-pink-600 text-pink-600 text-sm font-semibold py-1.5 rounded-lg
                      hover:bg-pink-600 hover:text-white transition
                      disabled:opacity-50 disabled:cursor-not-allowed"
             >

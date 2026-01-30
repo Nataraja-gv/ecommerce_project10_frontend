@@ -19,7 +19,11 @@ import { setIsAuthenticated, setUser } from "@/feature/user-slice";
 import CartDrawer from "@/page/cart/cartDrawer";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import { getAddress } from "@/services/address/postaddress";
+import {
+  getAddress,
+  PostSelectedAddress,
+} from "@/services/address/postaddress";
+import AddressModal from "@/page/address/addressModel";
 
 const Navbar = ({ user, cartsItemsList }) => {
   const [openLogin, setOpenLogin] = useState(false);
@@ -28,6 +32,8 @@ const Navbar = ({ user, cartsItemsList }) => {
   const profileRef = useRef(null);
   const cartItems = useSelector((state) => state.cartItem.items);
   const [selectedAddress, setSelectedAddress] = useState(null);
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [refershState, setRefreshState] = useState(false);
 
   const [cartDrawer, setCartDrawer] = useState(false);
   const router = useRouter();
@@ -79,7 +85,7 @@ const Navbar = ({ user, cartsItemsList }) => {
       const selected = res?.addresses?.find((a) => a.selected_address);
       if (selected) setSelectedAddress(selected);
     })();
-  }, []);
+  }, [refershState]);
 
   return (
     <>
@@ -99,7 +105,7 @@ const Navbar = ({ user, cartsItemsList }) => {
                 ⚡ <span>Delivery in 7 min</span>
               </span>
 
-              <button className="group flex items-center text-gray-800 text-sm font-medium hover:text-purple-700 transition cursor-pointer w-[270px] truncate">
+              <button onClick={()=>setAddressModalOpen(!addressModalOpen)} className="group flex items-center text-gray-800 text-sm font-medium hover:text-purple-700 transition cursor-pointer w-[270px] truncate">
                 <MapPin
                   size={15}
                   className="mr-1 text-purple-600 group-hover:text-purple-700 transition shrink-0"
@@ -145,7 +151,7 @@ const Navbar = ({ user, cartsItemsList }) => {
                   </div>
                   <ChevronDown
                     size={16}
-                    className={`${openProfile ? "rotate-180" : ""} transition`}
+                    className={ ` cursor-pointer ${openProfile ? "rotate-180" : ""} transition`}
                   />
                 </button>
 
@@ -168,7 +174,7 @@ const Navbar = ({ user, cartsItemsList }) => {
                       onClick={handleLogout}
                       disabled={loadingLogout}
                       className="flex items-center gap-2 w-full px-4 py-3 text-sm 
-                      text-gray-700 hover:bg-gray-100 transition disabled:opacity-50"
+                      text-gray-700 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer"
                     >
                       {loadingLogout ? (
                         <Loader2
@@ -176,7 +182,7 @@ const Navbar = ({ user, cartsItemsList }) => {
                           className="animate-spin text-gray-700"
                         />
                       ) : (
-                        <LogOut size={18} className="text-gray-700" />
+                        <LogOut size={18} className="text-gray-700 cursor-pointer" />
                       )}
                       {loadingLogout ? "Logging out..." : "Logout"}
                     </button>
@@ -226,6 +232,19 @@ const Navbar = ({ user, cartsItemsList }) => {
           open={cartDrawer}
           close={() => setCartDrawer(false)}
           // cartsItemsList={cartsItemsList}
+        />
+      )}
+      {addressModalOpen && (
+        <AddressModal
+          isOpen={addressModalOpen}
+          onClose={() => setAddressModalOpen(false)}
+          onSelect={async (address) => {
+            setSelectedAddress(address);
+            await PostSelectedAddress(address._id);
+            toast.success("Address selected");
+            setAddressModalOpen(false);
+          }}
+          setRefreshState={setRefreshState}
         />
       )}
     </>
