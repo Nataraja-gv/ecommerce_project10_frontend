@@ -9,7 +9,26 @@ export const createAOrder = async (data) => {
     headers: {
       "Content-Type": "application/json",
     },
-    data 
+    data,
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    toast.error(error?.response?.data?.message);
+  }
+};
+
+export const RazorPayInitCreateOrder = async (data) => {
+  const config = {
+    name:"razorpay create order",
+    method: "POST",
+    maxBodyLength: Infinity,
+    url: `/auth/razorpay-create-order`,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data,
   };
   try {
     const res = await axiosInstance.request(config);

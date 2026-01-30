@@ -14,7 +14,9 @@ import {
 } from "@/services/address/postaddress";
 import { MapPin, ChevronDown, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createAOrder } from "@/services/order/order";
+import { createAOrder, RazorPayInitCreateOrder } from "@/services/order/order";
+import { loadScript } from "@/lib/fucntion";
+import { RAZORPAY_KEY_ID } from "@/lib/config";
 
 export default function CartDrawer({ open, close }) {
   const dispatch = useDispatch();
@@ -96,6 +98,7 @@ export default function CartDrawer({ open, close }) {
       toast.error("Please select a payment method");
       return;
     }
+
     try {
       const orderPayload = {
         address_details: selectedAddress._id,
@@ -105,10 +108,47 @@ export default function CartDrawer({ open, close }) {
           quantity: item.quantity,
         })),
       };
-      const res = await createAOrder(orderPayload);
-      if (res) {
-        toast.success("Order placed successfully");
-        close();
+
+      if (paymentMethod === "ONLINE") {
+        const razorPayResponse = await RazorPayInitCreateOrder(orderPayload);
+        const order = razorPayResponse?.data;
+        if (order) {
+          close();
+          const res = await loadScript(
+            "https://checkout.razorpay.com/v1/checkout.js",
+          );
+          if (!res) {
+            alert("Razorpay failed to load!!");
+            return;
+          }
+          const options = {
+            key: RAZORPAY_KEY_ID,
+            amount: order?.amount,
+            currency: "INR",
+            name: "FreshNow",
+            description: "Test Transaction",
+            image:
+              "https://freshcartdev.s3.eu-north-1.amazonaws.com/growvana.jpg",
+            order_id: order.id,
+            prefill: {
+              name: order.notes.user_name,
+              email: order.notes.user_email,
+              contact: "9999999999",
+            },
+            theme: {
+              color: "#9810fa",
+            },
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+        }
+      } else {
+        const res = await createAOrder(orderPayload);
+        if (res) {
+          toast.success("Order placed successfully");
+          close();
+        }
       }
     } catch (error) {
       toast.error(error?.message || "Failed to place order");
