@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
-import { increaseQuantity, decreaseQuantity } from "@/feature/addtocart_slice";
+import {
+  increaseQuantity,
+  decreaseQuantity,
+  clearCart,
+} from "@/feature/addtocart_slice";
 import {
   addTocart,
   getuserCartItems,
@@ -113,6 +117,7 @@ export default function CartDrawer({ open, close }) {
         const razorPayResponse = await RazorPayInitCreateOrder(orderPayload);
         const order = razorPayResponse?.data;
         if (order) {
+          dispatch(clearCart());
           close();
           const res = await loadScript(
             "https://checkout.razorpay.com/v1/checkout.js",
@@ -128,7 +133,7 @@ export default function CartDrawer({ open, close }) {
             name: "FreshNow",
             description: "Test Transaction",
             image:
-              "https://freshcartdev.s3.eu-north-1.amazonaws.com/growvana.jpg",
+              "https://my-app-storage-bucket-s3.s3.ap-south-1.amazonaws.com/freshnow_logo_4.png",
             order_id: order.id,
             prefill: {
               name: order.notes.user_name,
@@ -147,6 +152,8 @@ export default function CartDrawer({ open, close }) {
         const res = await createAOrder(orderPayload);
         if (res) {
           toast.success("Order placed successfully");
+          dispatch(clearCart());
+
           close();
         }
       }

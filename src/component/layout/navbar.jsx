@@ -9,6 +9,7 @@ import {
   User,
   LogOut,
   Loader2,
+  Link,
 } from "lucide-react";
 import SignupPageModel from "@/page/signin-model";
 import { authLogout } from "@/services/auth";
@@ -17,6 +18,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { setIsAuthenticated, setUser } from "@/feature/user-slice";
 import CartDrawer from "@/page/cart/cartDrawer";
 import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const Navbar = ({ user, cartsItemsList }) => {
   const [openLogin, setOpenLogin] = useState(false);
@@ -24,7 +26,9 @@ const Navbar = ({ user, cartsItemsList }) => {
   const [loadingLogout, setLoadingLogout] = useState(false);
   const profileRef = useRef(null);
   const cartItems = useSelector((state) => state.cartItem.items);
+
   const [cartDrawer, setCartDrawer] = useState(false);
+   const router = useRouter();
 
   const dispatch = useDispatch();
   // Close dropdown when clicking outside
@@ -58,25 +62,25 @@ const Navbar = ({ user, cartsItemsList }) => {
     }
   };
   useEffect(() => {
-  const interval = setInterval(() => {
-    const token = Cookies.get("auth_token");
+    const interval = setInterval(() => {
+      const token = Cookies.get("auth_token");
 
-    if (!token) {
-      setOpenLogin(true);
-    } else {
-      setOpenLogin(false);
-    }
-  }, 1000); // every 1 second
+      if (!token) {
+        setOpenLogin(true);
+      } else {
+        setOpenLogin(false);
+      }
+    }, 1000); // every 1 second
 
-  return () => clearInterval(interval);
-}, []);
+    return () => clearInterval(interval);
+  }, []);
   return (
     <>
       <nav className="w-full bg-white shadow-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between py-3 px-4 md:px-6">
           {/* LEFT AREA */}
           <div className="flex items-center gap-6">
-            <h1 className="text-3xl font-extrabold text-purple-700 tracking-tight">
+            <h1 onClick={() => router.push("/")} className="text-3xl font-extrabold text-purple-700 tracking-tight cursor-pointer">
               FreshNow
             </h1>
 
@@ -85,7 +89,7 @@ const Navbar = ({ user, cartsItemsList }) => {
                 ⚡ Delivery in 7 min
               </span>
 
-              <button className="flex items-center text-gray-800 text-sm hover:text-purple-700 transition">
+              <button className="flex items-center text-gray-800 text-sm hover:text-purple-700 transition cursor-pointer">
                 <MapPin size={15} className="mr-1 text-purple-600" />
                 Narasimhaswamy Layout – 32nd Cross
                 <ChevronDown size={14} className="ml-1 text-purple-600" />
@@ -94,7 +98,7 @@ const Navbar = ({ user, cartsItemsList }) => {
           </div>
 
           {/* SEARCH BAR */}
-          <div className="hidden md:flex items-center w-1/3 bg-gray-100 px-4 py-2 rounded-full shadow-sm focus-within:ring-2 focus-within:ring-purple-300 transition">
+          <div className="hidden md:flex items-center w-1/3 bg-gray-100 px-4 py-2 rounded-full shadow-sm focus-within:ring-2 focus-within:ring-purple-300 transition cursor-pointer">
             <Search size={18} className="text-gray-500" />
             <input
               type="text"
@@ -114,7 +118,10 @@ const Navbar = ({ user, cartsItemsList }) => {
                   className="flex items-center gap-2 text-gray-800 font-semibold text-sm hover:text-purple-700 transition"
                 >
                   <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center shadow-sm border border-purple-200">
-                    <User size={20} className="text-purple-700" />
+                    <User
+                      size={20}
+                      className="text-purple-700 cursor-pointer"
+                    />
                   </div>
                   <ChevronDown
                     size={16}
@@ -159,7 +166,7 @@ const Navbar = ({ user, cartsItemsList }) => {
             ) : (
               <button
                 onClick={() => setOpenLogin(true)}
-                className="text-gray-700 hover:text-purple-700 font-medium text-sm"
+                className="text-gray-700 hover:text-purple-700 font-medium text-sm cursor-pointer"
               >
                 Login
               </button>
