@@ -19,6 +19,25 @@ export const addTocart = async (data) => {
   }
 };
 
+export const addCartAllItems = async (data) => {
+  const config = {
+    method: "POST",
+    maxBodyLength: Infinity,
+    url: `/auth/customer/cart/items/add`,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: data,
+  };
+  try {
+    const res = await axiosInstance.request(config);
+    return res?.data;
+  } catch (error) {
+    // toast.error(error?.response?.data?.message);
+    console.error(error);
+  }
+};
+
 export const removeFromCartApi = async (data) => {
   const config = {
     method: "PUT",

@@ -4,14 +4,16 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { AuthSingup, ResendOTP, verifyOtp } from "@/services/auth";
 import { toast } from "react-toastify";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setIsAuthenticated, setUser } from "@/feature/user-slice";
+import { addCartAllItems, addTocart } from "@/services/cart";
 
 const SignupPageModel = ({ closeModal }) => {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const cartItems = useSelector((state) => state.cartItem.items);
 
   const dispatch = useDispatch();
 
@@ -105,6 +107,11 @@ const SignupPageModel = ({ closeModal }) => {
         dispatch(setUser(res?.data));
         dispatch(setIsAuthenticated(true));
         closeModal();
+        const data = cartItems?.map((item) => ({
+          product: item.product,
+          quantity: item.quantity,
+        }));
+        await addCartAllItems({ items: data });
       }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Invalid OTP");
