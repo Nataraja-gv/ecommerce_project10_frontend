@@ -1,19 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import { addAddress, getAddress } from "@/services/address/postaddress";
-import { X, Plus, MapPin } from "lucide-react";
+"use client";
 
-// Fix default icon issue in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl:
-    "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+import { X, Plus, MapPin } from "lucide-react";
+import { addAddress, getAddress } from "@/services/address/postaddress";
+
+// Dynamically import Leaflet map (SSR disabled)
+const LeafletMap = dynamic(() => import("@/component/custom-ui/LeafletMap"), {
+  ssr: false,
 });
 
 const defaultCenter = [12.9716, 77.5946]; // Bangalore
@@ -36,9 +30,8 @@ export default function AddressModal({
 
   const fetchAddressFromLatLng = async (lat, lng) => {
     try {
-      // Use Nominatim OpenStreetMap API for reverse geocoding
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
       );
       const data = await res.json();
       if (data?.display_name) {
@@ -58,12 +51,11 @@ export default function AddressModal({
       getAddress().then((res) => setUserAddressList(res?.addresses || []));
       setStep("LIST");
       setSelectedLocation(null);
+      setSelectedAddress("");
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
-
-  const getIcon = () => <MapPin size={18} className=" shrink-0 text-pink-600 mt-1" />;
 
   const handleSaveAddress = async () => {
     if (!selectedLocation) {
@@ -85,34 +77,10 @@ export default function AddressModal({
     };
 
     const res = await addAddress(payload);
-
     if (res) {
       onClose();
       setRefreshState((prev) => !prev);
     }
-  };
-
-  const LocationSelector = () => {
-    useMapEvents({
-      click(e) {
-        const { lat, lng } = e.latlng;
-        setSelectedLocation([lat, lng]);
-        fetchAddressFromLatLng(lat, lng);
-      },
-    });
-    return selectedLocation ? (
-      <Marker
-        position={selectedLocation}
-        draggable
-        eventHandlers={{
-          dragend: (e) => {
-            const { lat, lng } = e.target.getLatLng();
-            setSelectedLocation([lat, lng]);
-            fetchAddressFromLatLng(lat, lng);
-          },
-        }}
-      />
-    ) : null;
   };
 
   return (
@@ -151,7 +119,7 @@ export default function AddressModal({
               </button>
             </div>
 
-            <div className="px-5 pb-5 space-y-4 max-h-[300px] overflow-y-scroll   ">
+            <div className="px-5 pb-5 space-y-4 max-h-[300px] overflow-y-auto">
               {userAddressList.map((addr) => (
                 <button
                   key={addr._id}
@@ -159,11 +127,13 @@ export default function AddressModal({
                     onSelect(addr);
                     onClose();
                   }}
-                  className="flex w-full gap-3 border-b pb-3 text-left "
+                  className="flex w-full gap-3 border-b pb-3 text-left"
                 >
-                  {getIcon()}
+                  <MapPin size={18} className="text-pink-600 mt-1" />
                   <div>
-                    <p className="font-medium">{addr.delivery_customer_name}</p>
+                    <p className="font-medium">
+                      {addr.delivery_customer_name}
+                    </p>
                     <p className="text-sm text-gray-500">
                       {addr.delivery_address}
                     </p>
@@ -177,21 +147,15 @@ export default function AddressModal({
         {/* MAP */}
         {step === "MAP" && (
           <div className="p-4 space-y-4">
-            <MapContainer
-              center={selectedLocation || defaultCenter}
-              zoom={16}
-              style={{ height: "260px", width: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              />
-              <LocationSelector />
-            </MapContainer>
+            <LeafletMap
+              center={defaultCenter}
+              selectedLocation={selectedLocation}
+              setSelectedLocation={setSelectedLocation}
+              fetchAddressFromLatLng={fetchAddressFromLatLng}
+            />
 
-            {/* Selected Address Preview */}
             {selectedAddress && (
-              <div className="p-3 border rounded-lg text-sm text-gray-700 bg-gray-50">
+              <div className="p-3 border rounded-lg text-sm bg-gray-50">
                 📍 {selectedAddress}
               </div>
             )}
@@ -214,7 +178,10 @@ export default function AddressModal({
               placeholder="Complete Address"
               value={formData.delivery_address}
               onChange={(e) =>
-                setFormData({ ...formData, delivery_address: e.target.value })
+                setFormData({
+                  ...formData,
+                  delivery_address: e.target.value,
+                })
               }
             />
 
@@ -233,18 +200,15 @@ export default function AddressModal({
             <input
               className="w-full border p-2 rounded"
               type="tel"
-              inputMode="numeric"
-              pattern="[0-9]{10}"
               maxLength={10}
-              placeholder="Enter 10-digit mobile number"
+              placeholder="10-digit mobile number"
               value={formData.delivery_phone_number}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, ""); // allow only numbers
+              onChange={(e) =>
                 setFormData({
                   ...formData,
-                  delivery_phone_number: value,
-                });
-              }}
+                  delivery_phone_number: e.target.value.replace(/\D/g, ""),
+                })
+              }
             />
 
             <button
