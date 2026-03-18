@@ -36,7 +36,7 @@ export default function ProductCategoryWise() {
   return (
     <div className="">
       {Object.values(categoryWiseProducts).map(({ categoryInfo, products }) => (
-        <div key={categoryInfo._id}>
+        <div key={categoryInfo?._id}>
           {/* Category Header */}
           <div className="flex items-center gap-3 mt-5">
             <h2 className="text-xl font-semibold">
